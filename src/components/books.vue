@@ -27,7 +27,6 @@
 							</span>
 						</h4>
 						<span class="mylife_css_font" v-html="item.body"></span>
-						
 					</p>
 					<!--表情评论-->
 					<div class="emoticons photo_detail_comment js_photo_detail"  style="display: none;">
@@ -46,7 +45,6 @@
 								<button class="format" @click="formatFun($event)" :data-id="index" :data-bookId='item.id'>发表</button>
 							</p>
 							<p class="photo_detail_face"><a class="trigger" href="javascript:;">☺</a></p>
-							<!--<div class="result">123 <p class="photo_detail_p"><span>吴先生</span><span>2018-07-02</span></p></div>-->
 						</div>
 					</div>
 					<!--表情评论-->
@@ -77,7 +75,8 @@
 				emoApi:'',
 				dataUrl:'http://47.75.37.172:8080/rong/books/externalIndex.json', //总数据接口
 				toGetCommit:'http://47.75.37.172:8080/rong/booksComment/externalIndex.json',//获取书籍对应评论
-				toPostCommit:'http://47.75.37.172:8080/rong/booksComment/externalSave', //评论提交
+				toPostCommit:'http://47.75.37.172:8080/rong/booksComment/externalSave.json', //评论提交
+				
 			}
 		},
 		created(){
@@ -96,7 +95,7 @@
 		},
 		methods:{
 			commitCreat(){
-				var self_ = this;
+				let self_ = this;
 				//表情插件
 				$.emoticons({
 					'activeCls':'trigger-active'
@@ -109,7 +108,7 @@
 			},
 			getDatas(){
 				//实现数据请求
-				var self_ = this;
+				let self_ = this;
 				this.axios.get(self_.dataUrl)
 				  	 .then(function (response) {
 //				    	console.log(response);
@@ -123,27 +122,29 @@
 			},
 			formatFun(e){
 				//点击评论
-				var self_ = this;
-				var index_ = $(e.target).attr('data-id');
+				let self_ = this;
+				let index_ = $(e.target).attr('data-id');
 				//内容
-				var content_ = self_.emoApi.format(self_.content[index_].val());
-				var $div_commit = $(e.target).parent('p').parent('div').parent('div')
-				var name = $($('.js_name')[index_]).val()
-				var telOrEma = $div_commit.find('.js_relation').val();
+				let content_ = self_.emoApi.format(self_.content[index_].val());
+				let $div_commit = $(e.target).parent('p').parent('div').parent('div')
+				let name = $($('.js_name')[index_]).val()
+				let telOrEma = $div_commit.find('.js_relation').val();
+				let contentAll = $div_commit.find('.photo_detail_textarea').val();
+				let bookId = $(e.target).attr('data-bookId');
 				//判断名字和内容是否填写了
 				if(name){
 					if(telOrEma){
-						if($div_commit.find('.photo_detail_textarea').val()){
-							var tel = /^1\d{10}$/;
-							var email=/^([a-zA-Z0-9]+[_|\_|\.]?)*[a-zA-Z0-9]+@([a-zA-Z0-9]+[_|\_|\.]?)*[a-zA-Z0-9]+\.[a-zA-Z]{2,3}$/;  
-							
+						if(contentAll){
+							let tel = /^1\d{10}$/;
+							let email=/^([a-zA-Z0-9]+[_|\_|\.]?)*[a-zA-Z0-9]+@([a-zA-Z0-9]+[_|\_|\.]?)*[a-zA-Z0-9]+\.[a-zA-Z]{2,3}$/;  
 							if (tel.test(telOrEma) || email.test(telOrEma)){
-								var temp = '<div class="result">'+content_+'<p class="photo_detail_p"><span>'
-								+name+'</span><span>2018-07-02</span></p></div>';
-								$div_commit.find('.publisher').append(temp);
-								$div_commit.find('.photo_detail_textarea').val("");
-								//调接口
-								self_.postCommit(content_,name,telOrEma,$(e.target).attr('data-bookId'));
+								//调接口 
+								if(self_.postCommit(contentAll,name,telOrEma,bookId)){
+									let temp = '<div class="result">'+content_+'<p class="photo_detail_p"><span>'
+									+name+'</span><span>2018-07-02</span></p></div>';
+									$div_commit.find('.publisher').append(temp);
+									$div_commit.find('.photo_detail_textarea').val("");
+								}
 							}else{ 
 								alert("你填的号码格式/邮箱格式不正确！");
 							}
@@ -159,18 +160,20 @@
 			},
 			commentOpen(e){
 				//获取对应评论
-				var self_ = this;
+				let self_ = this;
 				if(!$(e.target).attr('data-addCommit')){
 					this.axios.get(self_.toGetCommit,{
 						params:{
 							booksId:$(e.target).attr('data-bookId')
 						}
 					}).then(function (res) {
-				    	console.log(res);
-				    	var response = res.data;
+						
+				    	let response = res.data;
 				    	if(response.status){
 				    		for(let i=0;i<response.data.length;i++){
-				    			var temp = '<div class="result">'+response.data[i].content
+				    			//内容
+								let content_ = self_.emoApi.format(response.data[i].content);
+								let temp = '<div class="result">'+content_
 				    			+'<p class="photo_detail_p"><span>'
 				    			+response.data[i].userName+'</span><span>'+response.data[i].dateCreated.substr(0,10)+'</span></p></div>';
 				    			
@@ -196,16 +199,31 @@
 				$(e.target).hide();
 			},
 			postCommit(content_,userName_,telOrmail_,books_){
-				var self_ = this;
-				this.axios.post(self_.toPostCommit,{
+				let self_ = this;
+				let params = {
 					content:content_,
 					userName:userName_,
 					telOrmail:telOrmail_,
 					books:books_
-				}).then(function(res){
-					console.log(res);
+				}
+				this.axios.post(self_.toPostCommit,params,
+					{
+						headers: {'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8'},
+	  					withCredentials: true,
+	  					transformRequest:[function (data) {
+					        let ret = ''
+					        for (let it in data) {
+					          ret += encodeURIComponent(it) + '=' + encodeURIComponent(data[it]) + '&'
+					        }
+					        return ret
+					    }]
+					}
+				).then(function(res){
+					alert('评论成功！');
+					return true;
 				}).catch(function(err){
 					console.log(err);
+					return false;
 				})
 			}
 		}
