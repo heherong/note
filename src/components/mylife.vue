@@ -8,23 +8,25 @@
 					<h1 style="color:#e49289;">生活点滴</h1>
 				</header>
 				<h3 style="color: #d7a39d;font-size: 16px;">这个版块用来记录生活中的点滴，分享自己的日常小事...</h3>
-				<div class="mylife_css_model mylife_js_model">
+				<div class="mylife_css_model mylife_js_model" v-for="(item,index) in lists">
 					<p>
 						<!--点击打开-->
-						<img :src="require('@/assets/images/up.png')" class="button special small mylife_js_open mylife_css_open" @click="commentOpen($event)">
+						<img :src="require('@/assets/images/up.png')" class="button special small mylife_js_open mylife_css_open" :data-bookId='item.id' @click="commentOpen($event)">
 						<!--点击关闭-->
 						<img :src="require('@/assets/images/down.png')" class="button special small mylife_js_close mylife_css_close" @click="commitClose($event)">
-						<h4>2018.02.27 
-							<span style="color: #dfb68f;"></span>
+						<h4>
+							<span style="color: #dfb68f;">{{item.title}}</span>
+							<span style="font-size: 12px;">{{item.dateCreated | strsubstring(item.dateCreated)}}</span>
 							<span class="books_worksName">
-								推荐指数:<i class="back_heart1"></i>
+								推荐指数:
+								<i v-if="item.recommend==1" class="back_heart1"></i>
+								<i v-else-if="item.recommend==2" class="back_heart2"></i>
+								<i v-else-if="item.recommend==3" class="back_heart3"></i>
+								<i v-else-if="item.recommend==4" class="back_heart4"></i>
+								<i v-else-if="item.recommend==5" class="back_heart5"></i>
 							</span>
 						</h4>
-						<span class="mylife_css_font">
-						今早看到新闻：银行业高薪走下神坛：北京部分柜员月入不足4千 年终奖颗粒无收
-						受到四大银行和支付宝等互联网影响，到银行柜台办理业务的也逐渐减少，银行不会因此裁员，有部分被推向了销售层~银行虽说是个稳定靠谱的行业，
-						不过在选择专业的时候也要看看大流，其实当初‘被’选到软件学院也是意外的惊喜吧。
-						</span>
+						<span class="mylife_css_font" v-html="item.body"></span>
 					</p>
 					<!--表情评论-->
 					<div class="emoticons photo_detail_comment js_photo_detail" style="display: none;">
@@ -40,10 +42,9 @@
 							
 							<p style="margin-top: 15px;">
 								<textarea name="content" class="photo_detail_textarea" placeholder="请开始你的表演..."></textarea>
-								<button class="format" @click="formatFun($event)">发表</button>
+								<button class="format" @click="formatFun($event)" :data-id="index" :data-bookId='item.id'>发表</button>
 							</p>
 							<p class="photo_detail_face"><a class="trigger" href="javascript:;">☺</a></p>
-							<div class="result">123 <p class="photo_detail_p"><span>吴先生</span><span>2018-07-02</span></p></div>
 						</div>
 					</div>
 					<!--表情评论-->
@@ -59,6 +60,8 @@
 
 <script>
 	import "../assets/js/jquery.emoticons.js";
+	//qs包装axios的data
+	import qs from 'qs';
 	export default{
 		data(){
 			return{
@@ -70,9 +73,9 @@
 				lists:[],     //数据渲染
 				content:[],    //表情内容
 				emoApi:'',
-				dataUrl:'http://47.75.37.172:8080/rong/books/externalIndex.json', //总数据接口
-				toGetCommit:'http://47.75.37.172:8080/rong/booksComment/externalIndex.json',//获取书籍对应评论
-				toPostCommit:'http://47.75.37.172:8080/rong/booksComment/externalSave', //评论提交
+				dataUrl:'http://47.75.37.172:8080/rong/mylife/externalIndex.json', //总数据接口
+				toGetCommit:'http://47.75.37.172:8080/rong/mylifeComment/externalIndex.json',//获取书籍对应评论
+				toPostCommit:'http://47.75.37.172:8080/rong/mylifeComment/externalSave', //评论提交
 			}
 		},
 		created(){
@@ -84,7 +87,8 @@
 				}, 100);
 			});
 			//当页面中的data和methods对象创建完毕以后，就会自动调用created
-//			this.getDatas();
+			this.getDatas();
+			
 		},
 		updated(){
 			this.commitCreat();
@@ -107,7 +111,7 @@
 				var self_ = this;
 				this.axios.get(self_.dataUrl)
 				  	 .then(function (response) {
-//				    	console.log(response);
+				    	console.log(response);
 				    	if(response.data.status){
 	                    	self_.lists = response.data.data;
 	                    }

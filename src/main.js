@@ -17,6 +17,10 @@ Vue.prototype.axios = axios;
 
 Vue.config.productionTip = false
 
+import * as filters from './assets/js/filters.js'
+Object.keys(filters).forEach(key => {
+    Vue.filter(key, filters[key])
+})
 /* eslint-disable no-new */
 new Vue({
   el: '#app',

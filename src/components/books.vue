@@ -11,7 +11,7 @@
 				<!--model-->
 				<div class="mylife_css_model mylife_js_model" v-for="(item,index) in lists">
 					<p>
-						<span class="image right"><img src="" alt="" /></span>
+						<span class="image right"><img :src="item.image" alt="" /></span>
 						<!--点击打开-->
 						<img :src="require('@/assets/images/up.png')" class="button special small mylife_js_open mylife_css_open" :data-bookId='item.id' @click="commentOpen($event)">
 						<!--点击关闭-->
@@ -61,8 +61,11 @@
 
 <script>
 	import "../assets/js/jquery.emoticons.js";
+	//qs包装axios的data
+	import qs from 'qs';
+	import selfPublic from '../assets/js/selfPublic'
 	export default{
-		
+		mixins: [selfPublic],
 		data(){
 			return{
 				back_heart1:'back_heart1',//推荐指数
@@ -138,13 +141,28 @@
 							let tel = /^1\d{10}$/;
 							let email=/^([a-zA-Z0-9]+[_|\_|\.]?)*[a-zA-Z0-9]+@([a-zA-Z0-9]+[_|\_|\.]?)*[a-zA-Z0-9]+\.[a-zA-Z]{2,3}$/;  
 							if (tel.test(telOrEma) || email.test(telOrEma)){
-								//调接口 
-								if(self_.postCommit(contentAll,name,telOrEma,bookId)){
+								let params = {
+									content:contentAll,
+									userName:name,
+									telOrmail:telOrEma,
+									books:bookId
+								}
+								this.axios.post(self_.toPostCommit,qs.stringify(params),
+									{
+										headers: {'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8'},
+					  					withCredentials: false
+									}
+								).then(function(res){
+									alert('评论成功！');
+									
 									let temp = '<div class="result">'+content_+'<p class="photo_detail_p"><span>'
-									+name+'</span><span>2018-07-02</span></p></div>';
+									+name+'</span><span>'+self_.getCurrentTime()+'</span></p></div>';
 									$div_commit.find('.publisher').append(temp);
 									$div_commit.find('.photo_detail_textarea').val("");
-								}
+								}).catch(function(err){
+									console.log(err);
+									return false;
+								})
 							}else{ 
 								alert("你填的号码格式/邮箱格式不正确！");
 							}
@@ -197,34 +215,6 @@
 				$(e.target).prev('.mylife_css_open').show();
 				$(e.target).parent('p').parent('div').find('.js_photo_detail').hide();
 				$(e.target).hide();
-			},
-			postCommit(content_,userName_,telOrmail_,books_){
-				let self_ = this;
-				let params = {
-					content:content_,
-					userName:userName_,
-					telOrmail:telOrmail_,
-					books:books_
-				}
-				this.axios.post(self_.toPostCommit,params,
-					{
-						headers: {'Content-Type': 'application/x-www-form-urlencoded;charset=utf-8'},
-	  					withCredentials: true,
-	  					transformRequest:[function (data) {
-					        let ret = ''
-					        for (let it in data) {
-					          ret += encodeURIComponent(it) + '=' + encodeURIComponent(data[it]) + '&'
-					        }
-					        return ret
-					    }]
-					}
-				).then(function(res){
-					alert('评论成功！');
-					return true;
-				}).catch(function(err){
-					console.log(err);
-					return false;
-				})
 			}
 		}
 	}
